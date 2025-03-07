@@ -1,1 +1,227 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lip Sync Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .video-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 640px;
+        }
+        .result-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 640px;
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .visualization {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 640px;
+        }
+        .file-input {
+            margin-top: 20px;
+        }
+        .speaking {
+            color: green;
+            font-weight: bold;
+        }
+        .not-speaking {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lip Sync Detection</h1>
+        
+        <div class="tabs">
+            <button id="live-tab" class="tab-button active">Live Camera</button>
+            <button id="upload-tab" class="tab-button">Upload Video</button>
+        </div>
+        
+        <div id="live-section" class="section">
+            <div class="video-container">
+                <video id="video" width="640" height="480" autoplay></video>
+                <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+            </div>
+            
+            <div class="controls">
+                <button id="start-btn">Start Camera</button>
+                <button id="capture-btn" disabled>Capture Frame</button>
+            </div>
+            
+            <div class="result-container" id="result">
+                <p>Lip sync detection results will appear here.</p>
+            </div>
+            
+            <div class="visualization">
+                <img id="visualization" src="" alt="Lip landmarks visualization" style="display: none;">
+            </div>
+        </div>
+        
+        <div id="upload-section" class="section" style="display: none;">
+            <div class="file-input">
+                <input type="file" id="video-file" accept="video/*">
+                <button id="upload-btn">Process Video</button>
+            </div>
+            
+            <div class="result-container" id="upload-result">
+                <p>Upload a video file to process it.</p>
+            </div>
+            
+            <div class="video-container">
+                <video id="output-video" width="640" height="480" controls style="display: none;"></video>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('start-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const resultDiv = document.getElementById('result');
+        const visualizationImg = document.getElementById('visualization');
+        
+        // Tab switching
+        document.getElementById('live-tab').addEventListener('click', () => {
+            document.getElementById('live-section').style.display = 'block';
+            document.getElementById('upload-section').style.display = 'none';
+            document.getElementById('live-tab').classList.add('active');
+          document.getElementById('upload-tab').classList.remove('active');
+        });
+        
+        document.getElementById('upload-tab').addEventListener('click', () => {
+            document.getElementById('live-section').style.display = 'none';
+            document.getElementById('upload-section').style.display = 'block';
+            document.getElementById('live-tab').classList.remove('active');
+            document.getElementById('upload-tab').classList.add('active');
+        });
+        
+        // Start camera
+        startBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startBtn.disabled = true;
+                captureBtn.disabled = false;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                resultDiv.innerHTML = `<p>Error accessing camera: ${err.message}</p>`;
+            }
+        });
+        
+        // Capture frame and detect lip sync
+        captureBtn.addEventListener('click', async () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageBlob = await new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/jpeg');
+            });
+            
+            const formData = new FormData();
+            formData.append('image', imageBlob);
+            
+            try {
+                resultDiv.innerHTML = '<p>Processing...</p>';
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    resultDiv.innerHTML = `<p>Error: ${result.error}</p>`;
+                    return;
+                }
+                
+                if (!result.landmarks_detected) {
+                    resultDiv.innerHTML = '<p>No face detected. Please try again.</p>';
+                    visualizationImg.style.display = 'none';
+                    return;
+                }
+                
+                const speakingClass = result.speaking ? 'speaking' : 'not-speaking';
+                const speakingText = result.speaking ? 'Speaking' : 'Not Speaking';
+                
+                resultDiv.innerHTML = `
+                    <p>Status: <span class="${speakingClass}">${speakingText}</span></p>
+                    <p>Confidence: ${(result.confidence * 100).toFixed(2)}%</p>
+                `;
+                
+                if (result.visualization) {
+                    visualizationImg.src = `data:image/jpeg;base64,${result.visualization}`;
+                    visualizationImg.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error detecting lip sync:', err);
+                resultDiv.innerHTML = `<p>Error detecting lip sync: ${err.message}</p>`;
+            }
+        });
+        
+        // Upload and process video
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+            const videoFile = document.getElementById('video-file').files[0];
+            
+            if (!videoFile) {
+                document.getElementById('upload-result').innerHTML = '<p>Please select a video file.</p>';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('video', videoFile);
+            
+            try {
+                document.getElementById('upload-result').innerHTML = '<p>Processing video... This may take a while.</p>';
+                
+                const response = await fetch('/process_video', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    document.getElementById('upload-result').innerHTML = `<p>Error: ${result.error}</p>`;
+                    return;
+                }
+                
+                document.getElementById('upload-result').innerHTML = '<p>Video processed successfully!</p>';
+                
+                const outputVideo = document.getElementById('output-video');
+                outputVideo.src = result.output_video;
+                outputVideo.style.display = 'block';
+            } catch (err) {
+                console.error('Error processing video:', err);
+                document.getElementById('upload-result').innerHTML = `<p>Error processing video: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

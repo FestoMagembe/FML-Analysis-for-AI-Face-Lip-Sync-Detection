@@ -14,29 +14,29 @@ This project implements a deep learning-based facial lip sync detection system u
 ## Project Structure
 lip-sync-detection/
 │
-├── face_mesh_detector.py      # Face mesh detection utilities
-├── data_collector.py          # Data collection and preprocessing
-├── feature_engineering.py     # Feature engineering for model training
-├── model.py                   # CNN model definition
-├── train.py                   # Model training script
-├── evaluate.py                # Model evaluation script
-├── real_time_lip_sync.py      # Real-time inference implementation
-├── app.py                     # Flask web application
+├── face_mesh_detector.py      
+├── data_collector.py       
+├── feature_engineering.py 
+├── model.py 
+├── train.py
+├── evaluate.py
+├── real_time_lip_sync.py
+├── app.py
 │
-├── templates/                 # HTML templates for web interface
+├── templates/
 │   └── index.html
 │
-├── static/                    # Static files (CSS, JS, etc.)
+├── static/
 │
-├── models/                    # Trained models
+├── models/
 │   ├── lip_sync_model_best.h5
 │   └── lip_sync_model_final.h5
 │
-├── dataset/                   # Raw dataset
+├── dataset/
 │   ├── speaking/
 │   └── not_speaking/
 │
-├── processed_data/            # Processed dataset
+├── processed_data/
 │   ├── X_train.npy
 │   ├── y_train.npy
 │   ├── X_val.npy
@@ -45,17 +45,17 @@ lip-sync-detection/
 │   ├── y_test.npy
 │   └── scaler.pkl
 │
-├── training_plots/            # Training visualization
+├── training_plots/
 │   └── training_history.png
 │
-├── evaluation/                # Evaluation results
+├── evaluation/
 │   ├── confusion_matrix.png
 │   └── roc_curve.png
 │
-├── uploads/                   # Uploaded video files
+├── uploads/
 │
-└── requirements.txt           # Project dependencies
-Copy
+└── requirements.txt
+
 ## Setup and Installation
 
 1. Clone the repository
@@ -86,8 +86,8 @@ Web Interface
 Run the Flask application: python app.py
 Open a web browser and navigate to http://localhost:5000
 Use the interface to detect lip sync in real-time or process video files
+```
 
-Copy
 ## Step 11: Create a requirements.txt file
 tensorflow==2.13.0
 opencv-python==4.8.0.74
@@ -98,28 +98,28 @@ pandas==2.0.3
 scikit-learn==1.3.0
 Flask==2.3.2
 Pillow==10.0.0
-Copy
+
 ## Step 12: Troubleshooting and Optimization
 
 Here are some common issues you might encounter and how to resolve them:
 
-1. **Poor accuracy**: 
+1. Poor accuracy: 
    - Collect more training data
    - Try different model architectures
    - Apply data augmentation techniques
    - Tune hyperparameters
 
-2. **Slow inference speed**:
+2. Slow inference speed:
    - Optimize model architecture
    - Use TensorFlow Lite for mobile deployment
    - Reduce input resolution
 
-3. **Face detection issues**:
+3. Face detection issues:
    - Adjust lighting conditions
    - Ensure proper camera positioning
    - Experiment with different face detection configurations
 
-4. **Deployment challenges**:
+4. Deployment challenges:
    - Use Docker for containerization
    - Consider serverless deployment options
    - Implement caching mechanisms
